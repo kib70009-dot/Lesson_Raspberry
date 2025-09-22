@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IoT 設備監控</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f7f6;
+            color: #333;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #ffffff;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            border-radius: 8px;
+        }
+        header {
+            background-color: #28a745;
+            color: white;
+            padding: 15px 20px;
+            text-align: center;
+            border-radius: 8px 8px 0 0;
+            margin-bottom: 20px;
+        }
+        header h1 {
+            margin: 0;
+            font-size: 2em;
+        }
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .card {
+            background-color: #e9ecef;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            text-align: center;
+            transition: transform 0.2s ease-in-out;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        .card h2 {
+            color: #28a745;
+            margin-top: 0;
+            font-size: 1.5em;
+        }
+        .card p {
+            font-size: 1.1em;
+            color: #555;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: grey;
+            margin-left: 10px;
+            vertical-align: middle;
+        }
+        .status-indicator.online {
+            background-color: #28a745;
+        }
+        .status-indicator.offline {
+            background-color: #dc3545;
+        }
+        .control-buttons button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            margin: 5px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background-color 0.2s;
+        }
+        .control-buttons button:hover {
+            background-color: #0056b3;
+        }
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: #777;
+            font-size: 0.9em;
+            margin-top: 20px;
+            border-top: 1px solid #eee;
+        }
+
+        /* RWD adjustments */
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                padding: 15px;
+            }
+            header h1 {
+                font-size: 1.8em;
+            }
+            .dashboard-grid {
+                grid-template-columns: 1fr; /* Single column on smaller screens */
+            }
+            .card {
+                padding: 15px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            header h1 {
+                font-size: 1.5em;
+            }
+            .card h2 {
+                font-size: 1.3em;
+            }
+            .card p {
+                font-size: 1em;
+            }
+            .control-buttons button {
+                padding: 8px 12px;
+                font-size: 0.9em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>智慧物聯網監控中心</h1>
+        </header>
+
+        <main>
+            <section class="dashboard-grid">
+                <div class="card">
+                    <h2>溫度感測器 #1</h2>
+                    <p>狀態: <span id="temp1-status">離線</span> <span class="status-indicator offline" id="temp1-indicator"></span></p>
+                    <p>目前溫度: <span id="temp1-value">--</span> °C</p>
+                </div>
+
+                <div class="card">
+                    <h2>濕度感測器 #1</h2>
+                    <p>狀態: <span id="humidity1-status">離線</span> <span class="status-indicator offline" id="humidity1-indicator"></span></p>
+                    <p>目前濕度: <span id="humidity1-value">--</span> %</p>
+                </div>
+
+                <div class="card">
+                    <h2>燈光控制 #1</h2>
+                    <p>狀態: <span id="light1-status">關閉</span> <span class="status-indicator offline" id="light1-indicator"></span></p>
+                    <div class="control-buttons">
+                        <button onclick="toggleDevice('light1', 'on')">開啟</button>
+                        <button onclick="toggleDevice('light1', 'off')">關閉</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2>風扇控制 #1</h2>
+                    <p>狀態: <span id="fan1-status">關閉</span> <span class="status-indicator offline" id="fan1-indicator"></span></p>
+                    <div class="control-buttons">
+                        <button onclick="toggleDevice('fan1', 'on')">開啟</button>
+                        <button onclick="toggleDevice('fan1', 'off')">關閉</button>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>&copy; 2025 IoT 監控中心. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <script>
+        // 模擬設備數據和狀態
+        const deviceData = {
+            'temp1': { value: null, status: 'offline' },
+            'humidity1': { value: null, status: 'offline' },
+            'light1': { value: 'off', status: 'offline' },
+            'fan1': { value: 'off', status: 'offline' }
+        };
+
+        function updateDeviceUI(deviceId) {
+            const data = deviceData[deviceId];
+            const statusElement = document.getElementById(`${deviceId}-status`);
+            const indicatorElement = document.getElementById(`${deviceId}-indicator`);
+            const valueElement = document.getElementById(`${deviceId}-value`);
+
+            if (statusElement) statusElement.textContent = data.status === 'online' ? '連線' : '離線';
+            if (indicatorElement) {
+                indicatorElement.classList.remove('online', 'offline');
+                indicatorElement.classList.add(data.status);
+            }
+            if (valueElement && data.value !== null) {
+                valueElement.textContent = data.value;
+            } else if (valueElement) {
+                valueElement.textContent = data.value === 'on' ? '開啟' : (data.value === 'off' ? '關閉' : '--');
+            }
+        }
+
+        function toggleDevice(deviceId, action) {
+            // 模擬發送控制命令到後端
+            console.log(`Sending command to ${deviceId}: ${action}`);
+            // 這裡可以加入實際的 AJAX 請求到 Flask 後端
+            // 例如: fetch('/api/control', { method: 'POST', body: JSON.stringify({ device: deviceId, action: action }) })
+            // .then(response => response.json())
+            // .then(data => {
+            //     if (data.success) {
+            //         deviceData[deviceId].value = action;
+            //         deviceData[deviceId].status = 'online'; // 假設控制成功後設備上線
+            //         updateDeviceUI(deviceId);
+            //     }
+            // });
+
+            // 模擬設備狀態更新
+            deviceData[deviceId].value = action;
+            deviceData[deviceId].status = 'online'; // 假設控制成功後設備上線
+            updateDeviceUI(deviceId);
+            alert(`${deviceId} 已設定為 ${action === 'on' ? '開啟' : '關閉'}`);
+        }
+
+        // 模擬從後端獲取數據
+        function fetchDeviceData() {
+            // 這裡可以加入實際的 AJAX 請求到 Flask 後端獲取實時數據
+            // 例如: fetch('/api/data')
+            // .then(response => response.json())
+            // .then(data => {
+            //     // 更新 deviceData
+            //     // for (const key in data) {
+            //     //     if (deviceData[key]) {
+            //     //         deviceData[key].value = data[key].value;
+            //     //         deviceData[key].status = data[key].status;
+            //     //     }
+            //     // }
+            //     // updateAllDevicesUI();
+            // });
+
+            // 模擬數據更新
+            deviceData['temp1'].value = (Math.random() * 10 + 20).toFixed(1); // 20-30°C
+            deviceData['temp1'].status = Math.random() > 0.2 ? 'online' : 'offline';
+
+            deviceData['humidity1'].value = (Math.random() * 30 + 50).toFixed(1); // 50-80%
+            deviceData['humidity1'].status = Math.random() > 0.1 ? 'online' : 'offline';
+
+            updateAllDevicesUI();
+        }
+
+        function updateAllDevicesUI() {
+            for (const deviceId in deviceData) {
+                updateDeviceUI(deviceId);
+            }
+        }
+
+        // 初始化 UI
+        document.addEventListener('DOMContentLoaded', () => {
+            updateAllDevicesUI();
+            // 每 5 秒更新一次數據
+            setInterval(fetchDeviceData, 5000);
+        });
+    </script>
+</body>
+</html>
