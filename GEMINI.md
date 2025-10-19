@@ -6,4 +6,4 @@
     Lesson_Raspberry是上課用的主目錄
 
 ## 目前次專案的工作目錄
-    Lesson_Raspberry/貪食蛇1
+    Lesson_Raspberry/俄羅斯方塊/
