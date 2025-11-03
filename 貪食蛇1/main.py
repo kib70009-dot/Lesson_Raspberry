@@ -4,25 +4,12 @@ import random
 
 # 初始化 Pygame
 pygame.init()
-pygame.mixer.init() # 初始化音效模組
 
 # 視窗尺寸
 screen_width = 800
 screen_height = 600
 screen = pygame.display.set_mode((screen_width, screen_height))
 pygame.display.set_caption("貪食蛇")
-
-# 載入音效
-# 提示：請將音效檔案放在 'sounds' 資料夾中
-try:
-    pygame.mixer.music.load('sounds/background.wav')
-    eat_sound = pygame.mixer.Sound('sounds/eat.wav')
-    game_over_sound = pygame.mixer.Sound('sounds/game_over.wav')
-    pygame.mixer.music.play(-1) # -1 表示無限循環播放
-except pygame.error as e:
-    print(f"無法載入音效檔案: {e}")
-    # 在這裡可以選擇退出遊戲或繼續（沒有音效）
-
 
 # 顏色
 white = (255, 255, 255)
@@ -61,9 +48,10 @@ def message(msg, color):
     mesg = font_style.render(msg, True, color)
     screen.blit(mesg, [screen_width / 6, screen_height / 3])
 
-def main():
+def game_loop():
     """
     遊戲主迴圈
+    返回 True 表示要徹底退出遊戲，返回 False 表示僅結束本局。
     """
     game_over = False
     game_close = False
@@ -92,8 +80,6 @@ def main():
     while not game_over:
 
         while game_close:
-            pygame.mixer.music.stop()
-            game_over_sound.play()
             screen.fill(black)
             message("You Lost! Press Q-Quit or C-Play Again", red)
             our_score(length_of_snake - 1)
@@ -104,12 +90,15 @@ def main():
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_q:
                         game_over = True
-                        game_close = False
+                        # 返回 True，通知 main 函式退出
+                        return True
                     if event.key == pygame.K_c:
-                        main()
+                        # 不要遞迴呼叫，直接返回，讓主迴圈重新開始
+                        return False
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
+                # 返回 True，通知 main 函式退出
                 game_over = True
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_LEFT:
@@ -149,7 +138,6 @@ def main():
         pygame.display.update()
 
         if x1 == foodx and y1 == foody:
-            eat_sound.play()
             foodx = round(random.randrange(0, screen_width - snake_block) / 20.0) * 20.0
             foody = round(random.randrange(0, screen_height - snake_block) / 20.0) * 20.0
             length_of_snake += 1
@@ -162,6 +150,15 @@ def main():
 
 
         clock.tick(snake_speed)
+
+    # 如果是因為撞牆或關閉視窗導致 game_over，也返回 True
+    return True
+
+def main():
+    """遊戲進入點，控制遊戲是否要不斷重玩"""
+    # 如果 game_loop 返回 False (重玩)，迴圈繼續
+    while not game_loop():
+        pass # 繼續下一局
 
     pygame.quit()
     sys.exit()
